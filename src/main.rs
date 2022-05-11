@@ -57,6 +57,17 @@ enum Commands {
         #[clap(parse(from_os_str), value_name = "GLOB")]
         globs: Vec<PathBuf>,
     },
+
+    Rename {
+        #[clap(value_name = "TERM")]
+        from: String,
+
+        #[clap(value_name = "TERM")]
+        to: String,
+
+        #[clap(parse(from_os_str), value_name = "GLOB")]
+        globs: Vec<PathBuf>,
+    },
 }
 
 // Adds tags to given file
@@ -103,6 +114,13 @@ fn find(path: &PathBuf, term: &String) -> Result<(), TaggerError> {
     Ok(())
 }
 
+fn rename(path: &PathBuf, terms: &(&String, &String)) -> Result<(), TaggerError> {
+    let tags = xtag::get_tags(&path)?;
+    let tags = xtag::rename(terms.0, terms.1, tags)?;
+    xtag::set_tags(&path, &tags)?;
+    Ok(())
+}
+
 fn do_for_all<A>(
     globs: &Vec<PathBuf>,
     arg: &A,
@@ -131,5 +149,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         Commands::Delete { globs } => do_for_all(globs, &(), delete),
         Commands::List { globs } => do_for_all(globs, &(), list),
         Commands::Find { term, globs } => do_for_all(globs, term, find),
+        Commands::Rename { from, to, globs } => do_for_all(globs, &(from, to), rename),
     }
 }
