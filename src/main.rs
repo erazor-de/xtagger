@@ -125,8 +125,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
     match &args.command {
-        Commands::Add { tags, globs } => do_for_all(globs, &xtag::string_to_map(tags)?, add),
-        Commands::Remove { tags, globs } => do_for_all(globs, &xtag::string_to_map(tags)?, remove),
+        Commands::Add { tags, globs } => do_for_all(globs, &xtag::csl_to_map(tags)?, add),
+        Commands::Remove { tags, globs } => do_for_all(globs, &xtag::csl_to_map(tags)?, remove),
         Commands::Delete { globs } => do_for_all(globs, &(), delete),
         Commands::List { globs } => do_for_all(globs, &(), list),
         Commands::Find { term, globs } => do_for_all(globs, term, find),
