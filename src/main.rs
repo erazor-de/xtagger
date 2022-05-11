@@ -79,11 +79,11 @@ fn add(path: &PathBuf, tags: &HashMap<String, Option<String>>) -> Result<(), Tag
     Ok(())
 }
 
-fn delete(path: &PathBuf, _: &()) -> Result<(), TaggerError> {
+fn delete(path: &PathBuf, _: ()) -> Result<(), TaggerError> {
     xtag::delete_tags(path)
 }
 
-fn list(path: &PathBuf, _: &()) -> Result<(), TaggerError> {
+fn list(path: &PathBuf, _: ()) -> Result<(), TaggerError> {
     println!("{}", path.display());
     let container = xtag::get_tags(&path)?;
     for (tag, value) in container.iter().sorted() {
@@ -114,17 +114,17 @@ fn find(path: &PathBuf, term: &String) -> Result<(), TaggerError> {
     Ok(())
 }
 
-fn rename(path: &PathBuf, terms: &(&String, &String)) -> Result<(), TaggerError> {
+fn rename(path: &PathBuf, terms: (&String, &String)) -> Result<(), TaggerError> {
     let tags = xtag::get_tags(&path)?;
     let tags = xtag::rename(terms.0, terms.1, tags)?;
     xtag::set_tags(&path, &tags)?;
     Ok(())
 }
 
-fn do_for_all<A>(
+fn do_for_all<A: Copy>(
     globs: &Vec<PathBuf>,
-    arg: &A,
-    func: fn(&PathBuf, &A) -> Result<(), TaggerError>,
+    arg: A,
+    func: fn(&PathBuf, A) -> Result<(), TaggerError>,
 ) -> Result<(), Box<dyn Error>> {
     let options = MatchOptions {
         ..Default::default()
@@ -146,9 +146,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     match &args.command {
         Commands::Add { tags, globs } => do_for_all(globs, &xtag::csl_to_map(tags)?, add),
         Commands::Remove { tags, globs } => do_for_all(globs, &xtag::csl_to_map(tags)?, remove),
-        Commands::Delete { globs } => do_for_all(globs, &(), delete),
-        Commands::List { globs } => do_for_all(globs, &(), list),
+        Commands::Delete { globs } => do_for_all(globs, (), delete),
+        Commands::List { globs } => do_for_all(globs, (), list),
         Commands::Find { term, globs } => do_for_all(globs, term, find),
-        Commands::Rename { from, to, globs } => do_for_all(globs, &(from, to), rename),
+        Commands::Rename { from, to, globs } => do_for_all(globs, (from, to), rename),
     }
 }
