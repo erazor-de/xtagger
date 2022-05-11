@@ -96,7 +96,8 @@ fn remove(path: &PathBuf, tags: &HashMap<String, Option<String>>) -> Result<(), 
 }
 
 fn find(path: &PathBuf, term: &String) -> Result<(), TaggerError> {
-    if xtag::find_tags(path, term)? {
+    let tags = xtag::get_tags(&path)?;
+    if xtag::search(term, &tags)? {
         println!("{}", path.display());
     }
     Ok(())
