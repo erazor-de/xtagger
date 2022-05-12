@@ -60,10 +60,10 @@ enum Commands {
 
     Rename {
         #[clap(value_name = "TERM")]
-        from: String,
+        find: String,
 
         #[clap(value_name = "TERM")]
-        to: String,
+        replace: String,
 
         #[clap(parse(from_os_str), value_name = "GLOB")]
         globs: Vec<PathBuf>,
@@ -149,6 +149,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         Commands::Delete { globs } => do_for_all(globs, (), delete),
         Commands::List { globs } => do_for_all(globs, (), list),
         Commands::Find { term, globs } => do_for_all(globs, &xtag::compile_search(term)?, find),
-        Commands::Rename { from, to, globs } => do_for_all(globs, (from, to), rename),
+        Commands::Rename {
+            find,
+            replace,
+            globs,
+        } => do_for_all(globs, (find, replace), rename),
     }
 }
