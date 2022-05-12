@@ -106,9 +106,9 @@ fn remove(path: &PathBuf, tags: &HashMap<String, Option<String>>) -> Result<(), 
     Ok(())
 }
 
-fn find(path: &PathBuf, term: &String) -> Result<(), TaggerError> {
+fn find(path: &PathBuf, search: &xtag::Searcher) -> Result<(), TaggerError> {
     let tags = xtag::get_tags(&path)?;
-    if xtag::search(term, &tags)? {
+    if search.is_match(&tags) {
         println!("{}", path.display());
     }
     Ok(())
@@ -148,7 +148,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Commands::Remove { tags, globs } => do_for_all(globs, &xtag::csl_to_map(tags)?, remove),
         Commands::Delete { globs } => do_for_all(globs, (), delete),
         Commands::List { globs } => do_for_all(globs, (), list),
-        Commands::Find { term, globs } => do_for_all(globs, term, find),
+        Commands::Find { term, globs } => do_for_all(globs, &xtag::compile_search(term)?, find),
         Commands::Rename { from, to, globs } => do_for_all(globs, (from, to), rename),
     }
 }
