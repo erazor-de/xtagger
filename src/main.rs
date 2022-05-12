@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use glob::{glob_with, MatchOptions};
 use itertools::Itertools;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::path::PathBuf;
 use std::str;
@@ -42,13 +42,13 @@ enum Commands {
         globs: Vec<PathBuf>,
     },
 
-    /// List all tags
+    /// List files with tags and values
     List {
         #[clap(parse(from_os_str), value_name = "GLOB")]
         globs: Vec<PathBuf>,
     },
 
-    /// Find
+    /// Find matching files
     Find {
         /// Search term
         #[clap(value_name = "TERM")]
@@ -58,6 +58,7 @@ enum Commands {
         globs: Vec<PathBuf>,
     },
 
+    /// Rename tags
     Rename {
         #[clap(value_name = "TERM")]
         find: String,
@@ -65,6 +66,12 @@ enum Commands {
         #[clap(value_name = "TERM")]
         replace: String,
 
+        #[clap(parse(from_os_str), value_name = "GLOB")]
+        globs: Vec<PathBuf>,
+    },
+
+    /// List all used tags
+    Tags {
         #[clap(parse(from_os_str), value_name = "GLOB")]
         globs: Vec<PathBuf>,
     },
@@ -79,11 +86,11 @@ fn add(path: &PathBuf, tags: &HashMap<String, Option<String>>) -> Result<(), Tag
     Ok(())
 }
 
-fn delete(path: &PathBuf, _: ()) -> Result<(), TaggerError> {
+fn delete(path: &PathBuf) -> Result<(), TaggerError> {
     xtag::delete_tags(path)
 }
 
-fn list(path: &PathBuf, _: ()) -> Result<(), TaggerError> {
+fn list(path: &PathBuf) -> Result<(), TaggerError> {
     println!("{}", path.display());
     let container = xtag::get_tags(&path)?;
     for (tag, value) in container.iter().sorted() {
@@ -114,18 +121,34 @@ fn find(path: &PathBuf, search: &xtag::Searcher) -> Result<(), TaggerError> {
     Ok(())
 }
 
-fn rename(path: &PathBuf, terms: (&String, &String)) -> Result<(), TaggerError> {
+fn rename(path: &PathBuf, find: &str, replace: &str) -> Result<(), TaggerError> {
     let tags = xtag::get_tags(&path)?;
-    let tags = xtag::rename(terms.0, terms.1, tags)?;
+    let tags = xtag::rename(find, replace, tags)?;
     xtag::set_tags(&path, &tags)?;
     Ok(())
 }
 
-fn do_for_all<A: Copy>(
-    globs: &Vec<PathBuf>,
-    arg: A,
-    func: fn(&PathBuf, A) -> Result<(), TaggerError>,
-) -> Result<(), Box<dyn Error>> {
+fn tags(path: &PathBuf, all: &mut HashMap<String, HashSet<String>>) -> Result<(), TaggerError> {
+    let tags = xtag::get_tags(&path)?;
+    for (key, value) in tags {
+        match value {
+            Some(value) => {
+                all.entry(key).or_insert(HashSet::new()).insert(value);
+                ()
+            }
+            None => {
+                all.entry(key).or_insert(HashSet::new());
+                ()
+            }
+        }
+    }
+    Ok(())
+}
+
+fn do_for_all<A>(globs: &Vec<PathBuf>, mut func: A) -> Result<(), Box<dyn Error>>
+where
+    A: FnMut(&PathBuf) -> Result<(), TaggerError>,
+{
     let options = MatchOptions {
         ..Default::default()
     };
@@ -134,7 +157,7 @@ fn do_for_all<A: Copy>(
         let glob = glob.to_str().ok_or("Could not convert path to string")?;
         let globber = glob_with(glob, options)?;
         for entry in globber {
-            func(&entry?, arg)?;
+            func(&entry?)?;
         }
     }
     Ok(())
@@ -144,15 +167,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
     match &args.command {
-        Commands::Add { tags, globs } => do_for_all(globs, &xtag::csl_to_map(tags)?, add),
-        Commands::Remove { tags, globs } => do_for_all(globs, &xtag::csl_to_map(tags)?, remove),
-        Commands::Delete { globs } => do_for_all(globs, (), delete),
-        Commands::List { globs } => do_for_all(globs, (), list),
-        Commands::Find { term, globs } => do_for_all(globs, &xtag::compile_search(term)?, find),
+        Commands::Add { tags, globs } => {
+            let map = xtag::csl_to_map(tags)?;
+            do_for_all(globs, |path| add(path, &map))
+        }
+        Commands::Remove { tags, globs } => {
+            let map = xtag::csl_to_map(tags)?;
+            do_for_all(globs, |path| remove(path, &map))
+        }
+        Commands::Delete { globs } => do_for_all(globs, |path| delete(path)),
+        Commands::List { globs } => do_for_all(globs, |path| list(path)),
+        Commands::Find { term, globs } => {
+            let search = xtag::compile_search(term)?;
+            do_for_all(globs, |path| find(path, &search))
+        }
         Commands::Rename {
             find,
             replace,
             globs,
-        } => do_for_all(globs, (find, replace), rename),
+        } => do_for_all(globs, |path| rename(path, find, replace)),
+        Commands::Tags { globs } => {
+            let mut all: HashMap<String, HashSet<String>> = HashMap::new();
+            do_for_all(globs, |path| tags(path, &mut all))?;
+            for key in all.keys() {
+                println!("{key}");
+            }
+            Ok(())
+        }
     }
 }
