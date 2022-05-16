@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Faster search with precompilation and short-circuit evaluation
 - Allows renaming of tags with regex support
 - Can show all used tags in a set of files
+- Added dry_run option
 
-## [0.1.0] - 2022-02-10
+## [0.1.0] - 2022-05-10
 ### Added
 - Initial functionality

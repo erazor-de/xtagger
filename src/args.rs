@@ -1,6 +1,7 @@
 use clap::{ArgGroup, Parser};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use xtag::Searcher;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -14,8 +15,8 @@ pub struct Args {
     pub hyperlink: bool,
 
     /// filter per search term
-    #[clap(short, long)]
-    pub filter: Option<String>,
+    #[clap(short, long, value_name = "TERM", parse(try_from_str=xtag::compile_search))]
+    pub filter: Option<Searcher>,
 
     // Manipulation options
     /// Add tags
@@ -34,8 +35,12 @@ pub struct Args {
     #[clap(long, value_name = "REGEX")]
     pub replace: Option<String>,
 
-    /// Delete tags
+    /// Don't change anything
     #[clap(short, long)]
+    pub dry_run: bool,
+
+    /// Delete tags
+    #[clap(long)]
     pub delete: bool,
 
     // Output options, only one allowed and needed
@@ -54,4 +59,11 @@ pub struct Args {
     // Args
     #[clap(parse(from_os_str), value_name = "GLOB")]
     pub globs: Vec<PathBuf>,
+}
+
+pub fn custom_validation(_args: &Args) -> bool {
+    // FIXME add sanity check for rename:
+    // if find expression has capture group, replace expression needs $
+    // maybe escaping has been forgotten
+    true
 }
