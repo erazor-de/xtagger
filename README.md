@@ -82,8 +82,10 @@ will list the tags in alphabetical order, one per line.
 
 ## Selecting files
 
-To define the files xtagger should work on you can use multiple normal shell globs. For larger file
-amounts xtagger supports its own glob mechanism. Just put the glob in quotation marks[^3].
+To define the files xtagger should work on you can use normal shell globs. If you give xtagger the
+path of a directory it will traverse the directory recursively and issue all actions on directories
+as well as files. Should you need special selection criteria you also can use xtagger as exec target
+of the find command for example.
 
 ## Filter files
 
@@ -210,5 +212,3 @@ This project is licensed under the [MIT License](https://opensource.org/licenses
 	Also extended attributes might have filesystem specific size limits. These might be further
 	limited by other mechanisms using them. SELinux for example uses extended attributes for storing
 	the files security context.
-
-[^3]: xtaggers own glob mechanism can't use the `~` shorthand for the home directory.

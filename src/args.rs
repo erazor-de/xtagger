@@ -57,8 +57,8 @@ pub struct Args {
     pub tags: bool,
 
     // Args
-    #[clap(parse(from_os_str), value_name = "GLOB")]
-    pub globs: Vec<PathBuf>,
+    #[clap(parse(from_os_str), value_name = "PATH")]
+    pub paths: Vec<PathBuf>,
 }
 
 pub fn custom_validation(_args: &Args) -> bool {
