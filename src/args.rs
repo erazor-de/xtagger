@@ -1,7 +1,6 @@
 use clap::{ArgGroup, Parser};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use xtag::Searcher;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -9,14 +8,19 @@ use xtag::Searcher;
 #[clap(group(ArgGroup::new("modification").multiple(true).required(false).args(&["add", "remove", "find"])))]
 #[clap(group(ArgGroup::new("manipulation").multiple(false).required(false).args(&["delete"]).conflicts_with("modification")))]
 #[clap(group(ArgGroup::new("rename").multiple(true).required(false).args(&["find", "replace"]).requires_all(&["find", "replace"])))]
+#[clap(group(ArgGroup::new("filtering").multiple(false).required(false).args(&["filter", "bookmark"])))]
 pub struct Args {
     /// Print files as hyperlinks
     #[clap(short, long)]
     pub hyperlink: bool,
 
     /// filter per search term
-    #[clap(short, long, value_name = "TERM", parse(try_from_str=xtag::compile_search))]
-    pub filter: Option<Searcher>,
+    #[clap(short, long, value_name = "TERM")]
+    pub filter: Option<String>,
+
+    /// filter per bookmark
+    #[clap(short, long, value_name = "PATH", parse(from_os_str))]
+    pub bookmark: Option<PathBuf>,
 
     // Manipulation options
     /// Add tags
@@ -59,11 +63,4 @@ pub struct Args {
     // Args
     #[clap(parse(from_os_str), value_name = "PATH")]
     pub paths: Vec<PathBuf>,
-}
-
-pub fn custom_validation(_args: &Args) -> bool {
-    // FIXME add sanity check for rename:
-    // if find expression has capture group, replace expression needs $
-    // maybe escaping has been forgotten
-    true
 }
