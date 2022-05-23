@@ -86,9 +86,10 @@ fn handle_endpoint(
 
     if let Some(remove_tags) = &app.args.manipulate.remove {
         for tag in remove_tags.keys() {
-            tags.remove(tag);
+            if let Some(_) = tags.remove(tag) {
+                tags_possibly_changed = true;
+            }
         }
-        tags_possibly_changed = true;
     }
 
     if let Some(add_tags) = &app.args.manipulate.add {
