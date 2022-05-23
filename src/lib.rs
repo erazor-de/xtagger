@@ -35,6 +35,12 @@ fn show_file(path: &PathBuf, tags: &HashMap<String, Option<String>>, hyperlink: 
     }
 }
 
+fn print_tags(tags: &HashMap<String, HashSet<String>>) {
+    for key in tags.keys().sorted() {
+        println!("{key}");
+    }
+}
+
 fn collect_tags(
     tags: &HashMap<String, Option<String>>,
     collection: &mut HashMap<String, HashSet<String>>,
@@ -70,32 +76,35 @@ fn handle_endpoint(
         }
     }
 
-    if let (Some(find), Some(replace)) = (&app.args.find, &app.args.replace) {
+    if let (Some(find), Some(replace)) = (
+        &app.args.manipulate.rename.find,
+        &app.args.manipulate.rename.replace,
+    ) {
         tags = xtag::rename(&find, &replace, tags)?;
         tags_possibly_changed = true;
     }
 
-    if let Some(remove_tags) = &app.args.remove {
+    if let Some(remove_tags) = &app.args.manipulate.remove {
         for tag in remove_tags.keys() {
             tags.remove(tag);
         }
         tags_possibly_changed = true;
     }
 
-    if let Some(add_tags) = &app.args.add {
+    if let Some(add_tags) = &app.args.manipulate.add {
         tags.extend(add_tags.to_owned());
         tags_possibly_changed = true;
     }
 
-    if app.args.list {
+    if app.args.print.list {
         list_file(&path, app.args.hyperlink);
     }
 
-    if app.args.show {
+    if app.args.print.show {
         show_file(&path, &tags, app.args.hyperlink);
     }
 
-    if app.args.tags {
+    if app.args.print.tags {
         collect_tags(&tags, all_tags);
     }
 
@@ -103,7 +112,7 @@ fn handle_endpoint(
         xtag::set_tags(&path, &tags)?;
     }
 
-    if app.args.delete {
+    if app.args.manipulate.delete {
         xtag::delete_tags(&path)?;
     }
 
@@ -135,10 +144,8 @@ pub fn run() -> Result<()> {
         handle_path(path, &app, &mut all_tags)?;
     }
 
-    if app.args.tags {
-        for key in all_tags.keys().sorted() {
-            println!("{key}");
-        }
+    if app.args.print.tags {
+        print_tags(&all_tags);
     }
 
     Ok(())

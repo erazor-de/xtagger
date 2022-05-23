@@ -20,9 +20,9 @@ impl App {
 }
 
 fn get_searcher(args: &Args) -> Result<Option<Searcher>> {
-    let filter = if let Some(term) = &args.filter {
+    let filter = if let Some(term) = &args.filter.filter {
         Some(term.to_owned())
-    } else if let Some(link) = &args.bookmark {
+    } else if let Some(link) = &args.filter.bookmark {
         Some(load_bookmark(link)?)
     } else {
         None
