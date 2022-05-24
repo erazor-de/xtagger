@@ -62,11 +62,10 @@ fn collect_tags(
     }
 }
 
-fn handle_endpoint(
-    path: &PathBuf,
-    app: &App,
-    all_tags: &mut HashMap<String, HashSet<String>>,
-) -> Result<()> {
+fn handle_endpoint<F>(path: &PathBuf, app: &App, output_callback: &mut F) -> Result<()>
+where
+    F: FnMut(&PathBuf, &HashMap<String, Option<String>>),
+{
     let mut tags = xtag::get_tags(&path)?;
     let mut tags_possibly_changed = false;
 
@@ -97,17 +96,7 @@ fn handle_endpoint(
         tags_possibly_changed = true;
     }
 
-    if app.args.print.list {
-        list_file(&path, app.args.hyperlink);
-    }
-
-    if app.args.print.show {
-        show_file(&path, &tags, app.args.hyperlink);
-    }
-
-    if app.args.print.tags {
-        collect_tags(&tags, all_tags);
-    }
+    output_callback(&path, &tags);
 
     if tags_possibly_changed && !app.args.dry_run {
         xtag::set_tags(&path, &tags)?;
@@ -120,33 +109,49 @@ fn handle_endpoint(
     Ok(())
 }
 
-fn handle_path(
-    path: &PathBuf,
-    app: &App,
-    all_tags: &mut HashMap<String, HashSet<String>>,
-) -> Result<()> {
+fn handle_path<F>(path: &PathBuf, app: &App, output_callback: &mut F) -> Result<()>
+where
+    F: FnMut(&PathBuf, &HashMap<String, Option<String>>),
+{
     if path.is_dir() {
         // The directory is also handled
-        handle_endpoint(path, app, all_tags)?;
+        handle_endpoint(path, app, output_callback)?;
         for entry in fs::read_dir(path)? {
-            handle_path(&entry?.path(), app, all_tags)?;
+            handle_path(&entry?.path(), app, output_callback)?;
         }
     } else {
-        handle_endpoint(path, app, all_tags)?;
+        handle_endpoint(path, app, output_callback)?;
+    }
+    Ok(())
+}
+
+fn handle_paths<F>(app: &App, output_callback: &mut F) -> Result<()>
+where
+    F: FnMut(&PathBuf, &HashMap<String, Option<String>>),
+{
+    for path in &app.args.paths {
+        handle_path(path, &app, output_callback)?;
     }
     Ok(())
 }
 
 pub fn run() -> Result<()> {
     let app = App::new()?;
-    let mut all_tags: HashMap<String, HashSet<String>> = HashMap::new();
-
-    for path in &app.args.paths {
-        handle_path(path, &app, &mut all_tags)?;
-    }
 
     if app.args.print.tags {
+        let mut all_tags: HashMap<String, HashSet<String>> = HashMap::new();
+
+        handle_paths(&app, &mut |_, tags| collect_tags(tags, &mut all_tags))?;
+
         print_tags(&all_tags);
+    } else if app.args.print.list {
+        handle_paths(&app, &mut |path, _| list_file(path, app.args.hyperlink))?;
+    } else if app.args.print.show {
+        handle_paths(&app, &mut |path, tags| {
+            show_file(path, tags, app.args.hyperlink)
+        })?;
+    } else {
+        handle_paths(&app, &mut |_, _| {})?;
     }
 
     Ok(())
