@@ -1,6 +1,6 @@
 use clap::{ArgGroup, Parser};
-use std::collections::HashMap;
 use std::path::PathBuf;
+use xtag::XTags;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -37,11 +37,11 @@ pub struct Args {
 pub struct Manipulate {
     /// Add tags
     #[clap(short, long, value_name = "TAGS", parse(try_from_str=xtag::csl_to_map))]
-    pub add: Option<HashMap<String, Option<String>>>,
+    pub add: Option<XTags>,
 
     /// Remove tags
     #[clap(short, long, value_name = "TAGS", parse(try_from_str=xtag::csl_to_map))]
-    pub remove: Option<HashMap<String, Option<String>>>,
+    pub remove: Option<XTags>,
 
     /// Delete tags
     #[clap(long)]

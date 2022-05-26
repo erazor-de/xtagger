@@ -8,6 +8,7 @@ use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
+use xtag::XTags;
 
 fn print_file(path: &PathBuf, hyperlink: bool) {
     if hyperlink {
@@ -25,7 +26,7 @@ fn list_file(path: &PathBuf, hyperlink: bool) {
     print_file(&path, hyperlink);
 }
 
-fn show_file(path: &PathBuf, tags: &HashMap<String, Option<String>>, hyperlink: bool) {
+fn show_file(path: &PathBuf, tags: &XTags, hyperlink: bool) {
     print_file(&path, hyperlink);
     for (tag, value) in tags.iter().sorted() {
         match value {
@@ -41,10 +42,7 @@ fn print_tags(tags: &HashMap<String, HashSet<String>>) {
     }
 }
 
-fn collect_tags(
-    tags: &HashMap<String, Option<String>>,
-    collection: &mut HashMap<String, HashSet<String>>,
-) {
+fn collect_tags(tags: &XTags, collection: &mut HashMap<String, HashSet<String>>) {
     for (key, value) in tags {
         match value {
             Some(value) => {
@@ -64,7 +62,7 @@ fn collect_tags(
 
 fn handle_endpoint<F>(path: &PathBuf, app: &App, output_callback: &mut F) -> Result<()>
 where
-    F: FnMut(&PathBuf, &HashMap<String, Option<String>>),
+    F: FnMut(&PathBuf, &XTags),
 {
     let mut tags = xtag::get_tags(&path)?;
     let mut tags_possibly_changed = false;
@@ -111,7 +109,7 @@ where
 
 fn handle_path<F>(path: &PathBuf, app: &App, output_callback: &mut F) -> Result<()>
 where
-    F: FnMut(&PathBuf, &HashMap<String, Option<String>>),
+    F: FnMut(&PathBuf, &XTags),
 {
     if path.is_dir() {
         // The directory is also handled
@@ -127,7 +125,7 @@ where
 
 fn handle_paths<F>(app: &App, output_callback: &mut F) -> Result<()>
 where
-    F: FnMut(&PathBuf, &HashMap<String, Option<String>>),
+    F: FnMut(&PathBuf, &XTags),
 {
     for path in &app.args.paths {
         handle_path(path, &app, output_callback)?;
