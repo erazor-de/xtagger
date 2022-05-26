@@ -1,6 +1,7 @@
 use crate::args::Args;
 use anyhow::{anyhow, Result};
 use clap::Parser;
+use regex::Regex;
 use std::fs;
 use std::path::PathBuf;
 use xtag::Searcher;
@@ -30,10 +31,25 @@ fn get_searcher(args: &Args) -> Result<Option<Searcher>> {
     filter.map_or(Ok(None), |term| Ok(Some(xtag::compile_search(&term)?)))
 }
 
-fn custom_validation(_args: &Args) -> Result<()> {
-    // FIXME add sanity check for rename:
-    // if find expression has capture group, replace expression needs $
+fn custom_validation(args: &Args) -> Result<()> {
+    // If find expression has capture group, replace expression needs $
     // maybe escaping has been forgotten
+    if let (Some(find), Some(replace)) = (
+        &args.manipulate.rename.find,
+        &args.manipulate.rename.replace,
+    ) {
+        // Matches capture groups and named capture groups but not non-capture group
+        // Doesn't match escaped parentheses
+        let find_capture_group_start = Regex::new(r"(^|[^\\])\(([^\?]|\?P<)").unwrap();
+        if find_capture_group_start.find(&find).is_some() {
+            let find_dollar = Regex::new(r"\$").unwrap();
+            if !find_dollar.find(&replace).is_some() {
+                return Err(anyhow!(
+                    "find term contains capture group, but replace term no $"
+                ));
+            }
+        }
+    }
     Ok(())
 }
 
