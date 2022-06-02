@@ -1,14 +1,16 @@
 mod app;
 mod args;
 
-pub use crate::args::Args;
-use anyhow::Result;
-use app::App;
-use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
+
+use anyhow::Result;
+use app::App;
+use itertools::Itertools;
 use xtag::XTags;
+
+pub use crate::args::Args;
 
 fn print_file(path: &PathBuf, hyperlink: bool) {
     if hyperlink {
@@ -111,15 +113,15 @@ fn handle_path<F>(path: &PathBuf, app: &App, output_callback: &mut F) -> Result<
 where
     F: FnMut(&PathBuf, &XTags),
 {
-    if path.is_dir() {
-        // The directory is also handled
-        handle_endpoint(path, app, output_callback)?;
+    // Directories and files are handled equally
+    handle_endpoint(path, app, output_callback)?;
+
+    if path.is_dir() && app.args.recurse {
         for entry in fs::read_dir(path)? {
             handle_path(&entry?.path(), app, output_callback)?;
         }
-    } else {
-        handle_endpoint(path, app, output_callback)?;
     }
+
     Ok(())
 }
 

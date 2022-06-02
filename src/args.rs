@@ -1,5 +1,6 @@
-use clap::{ArgGroup, Parser};
 use std::path::PathBuf;
+
+use clap::{ArgGroup, Parser};
 use xtag::XTags;
 
 #[derive(Parser)]
@@ -14,10 +15,13 @@ pub struct Args {
     #[clap(short, long)]
     pub hyperlink: bool,
 
-    // Manipulation options
     /// Don't change anything
     #[clap(short, long)]
     pub dry_run: bool,
+
+    /// Recurse into directories
+    #[clap(short, long)]
+    pub recurse: bool,
 
     #[clap(flatten)]
     pub print: Print,
