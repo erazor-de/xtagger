@@ -1,10 +1,15 @@
+mod app;
 mod args;
 
-pub use crate::args::{custom_validation, Args};
-use anyhow::{anyhow, Result};
-use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
+
+use anyhow::{anyhow, Result};
+use app::App;
+use itertools::Itertools;
+use xtag::XTags;
+
+pub use crate::args::Args;
 
 fn print_file(path: &PathBuf, hyperlink: bool) {
     if hyperlink {
@@ -18,11 +23,11 @@ fn print_file(path: &PathBuf, hyperlink: bool) {
     }
 }
 
-pub fn list_file(path: &PathBuf, hyperlink: bool) {
+fn list_file(path: &PathBuf, hyperlink: bool) {
     print_file(&path, hyperlink);
 }
 
-pub fn show_file(path: &PathBuf, tags: &HashMap<String, Option<String>>, hyperlink: bool) {
+fn show_file(path: &PathBuf, tags: &XTags, hyperlink: bool) {
     print_file(&path, hyperlink);
     for (tag, value) in tags.iter().sorted() {
         match value {
@@ -32,10 +37,13 @@ pub fn show_file(path: &PathBuf, tags: &HashMap<String, Option<String>>, hyperli
     }
 }
 
-pub fn collect_tags(
-    tags: &HashMap<String, Option<String>>,
-    collection: &mut HashMap<String, HashSet<String>>,
-) {
+fn print_tags(tags: &HashMap<String, HashSet<String>>) {
+    for key in tags.keys().sorted() {
+        println!("{key}");
+    }
+}
+
+fn collect_tags(tags: &XTags, collection: &mut HashMap<String, HashSet<String>>) {
     for (key, value) in tags {
         match value {
             Some(value) => {
@@ -53,67 +61,87 @@ pub fn collect_tags(
     }
 }
 
-pub fn run(args: &Args) -> Result<()> {
-    let mut all_tags: HashMap<String, HashSet<String>> = HashMap::new();
+// Works on files and directories, symbolic links don't have extended attributes
+fn handle_endpoint<F>(path: &PathBuf, app: &App, output_callback: &mut F) -> Result<()>
+where
+    F: FnMut(&PathBuf, &XTags),
+{
+    let mut tags = xtag::get_tags(&path)?;
+    let mut tags_possibly_changed = false;
 
-    for glob in &args.globs {
+    if let Some(filter) = &app.filter {
+        if !filter.is_match(&tags) {
+            return Ok(());
+        }
+    }
+
+    if let (Some(find), Some(replace)) = (
+        &app.args.manipulate.rename.find,
+        &app.args.manipulate.rename.replace,
+    ) {
+        tags = xtag::rename(&find, &replace, tags)?;
+        tags_possibly_changed = true;
+    }
+
+    if let Some(remove_tags) = &app.args.manipulate.remove {
+        for tag in remove_tags.keys() {
+            if let Some(_) = tags.remove(tag) {
+                tags_possibly_changed = true;
+            }
+        }
+    }
+
+    if let Some(add_tags) = &app.args.manipulate.add {
+        tags.extend(add_tags.to_owned());
+        tags_possibly_changed = true;
+    }
+
+    output_callback(&path, &tags);
+
+    if tags_possibly_changed && !app.args.dry_run {
+        xtag::set_tags(&path, &tags)?;
+    }
+
+    if app.args.manipulate.delete {
+        xtag::delete_tags(&path)?;
+    }
+
+    Ok(())
+}
+
+fn handle_paths<F>(app: &App, output_callback: &mut F) -> Result<()>
+where
+    F: FnMut(&PathBuf, &XTags),
+{
+    for glob in &app.args.globs {
         let glob = glob
             .to_str()
             .ok_or(anyhow!("Could not convert path to string"))?;
         for path in glob::glob(glob)? {
             let path = path?;
-            let mut tags = xtag::get_tags(&path)?;
-            let mut tags_possibly_changed = false;
-
-            if let Some(filter) = &args.filter {
-                if !filter.is_match(&tags) {
-                    continue;
-                }
-            }
-
-            if let (Some(find), Some(replace)) = (&args.find, &args.replace) {
-                tags = xtag::rename(&find, &replace, tags)?;
-                tags_possibly_changed = true;
-            }
-
-            if let Some(remove_tags) = &args.remove {
-                for tag in remove_tags.keys() {
-                    tags.remove(tag);
-                }
-                tags_possibly_changed = true;
-            }
-
-            if let Some(add_tags) = &args.add {
-                tags.extend(add_tags.to_owned());
-                tags_possibly_changed = true;
-            }
-
-            if args.list {
-                list_file(&path, args.hyperlink);
-            }
-
-            if args.show {
-                show_file(&path, &tags, args.hyperlink);
-            }
-
-            if args.tags {
-                collect_tags(&tags, &mut all_tags);
-            }
-
-            if tags_possibly_changed && !args.dry_run {
-                xtag::set_tags(&path, &tags)?;
-            }
-
-            if args.delete {
-                xtag::delete_tags(&path)?;
-            }
+            handle_endpoint(&path, &app, output_callback)?;
         }
     }
+    Ok(())
+}
 
-    if args.tags {
-        for key in all_tags.keys().sorted() {
-            println!("{key}");
-        }
+pub fn run() -> Result<()> {
+    let app = App::new()?;
+
+    if app.args.print.tags {
+        let mut all_tags: HashMap<String, HashSet<String>> = HashMap::new();
+
+        handle_paths(&app, &mut |_, tags| collect_tags(tags, &mut all_tags))?;
+
+        print_tags(&all_tags);
+    } else if app.args.print.list {
+        handle_paths(&app, &mut |path, _| list_file(path, app.args.hyperlink))?;
+    } else if app.args.print.show {
+        handle_paths(&app, &mut |path, tags| {
+            show_file(path, tags, app.args.hyperlink)
+        })?;
+    } else {
+        handle_paths(&app, &mut |_, _| {})?;
     }
 
     Ok(())

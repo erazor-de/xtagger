@@ -1,6 +1,6 @@
 [package]
 name = "xtagger"
-version = "1.0.0"
+version = "1.1.0"
 authors = ["Stefan Achatz <erazor_de@users.sourceforge.net>"]
 edition = "2021"
 license = "MIT"
@@ -14,7 +14,8 @@ Command line application for managing and searching tags stored in filesystem ex
 
 [dependencies]
 clap = { version = "3", features = ["derive"] }
-glob = "0.3"
 itertools = "0.10"
-xtag = { path = "../xtag", version = "1.0.0" }
+xtag = { path = "../xtag", version = "1.1.0" }
 anyhow = "1"
+regex = "1"
+glob = "0.3"
