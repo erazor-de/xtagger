@@ -2,10 +2,9 @@ mod app;
 mod args;
 
 use std::collections::{HashMap, HashSet};
-use std::fs;
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use app::App;
 use itertools::Itertools;
 use xtag::XTags;
@@ -62,6 +61,7 @@ fn collect_tags(tags: &XTags, collection: &mut HashMap<String, HashSet<String>>)
     }
 }
 
+// Works on files and directories, symbolic links don't have extended attributes
 fn handle_endpoint<F>(path: &PathBuf, app: &App, output_callback: &mut F) -> Result<()>
 where
     F: FnMut(&PathBuf, &XTags),
@@ -109,28 +109,18 @@ where
     Ok(())
 }
 
-fn handle_path<F>(path: &PathBuf, app: &App, output_callback: &mut F) -> Result<()>
-where
-    F: FnMut(&PathBuf, &XTags),
-{
-    // Directories and files are handled equally
-    handle_endpoint(path, app, output_callback)?;
-
-    if path.is_dir() && app.args.recurse {
-        for entry in fs::read_dir(path)? {
-            handle_path(&entry?.path(), app, output_callback)?;
-        }
-    }
-
-    Ok(())
-}
-
 fn handle_paths<F>(app: &App, output_callback: &mut F) -> Result<()>
 where
     F: FnMut(&PathBuf, &XTags),
 {
-    for path in &app.args.paths {
-        handle_path(path, &app, output_callback)?;
+    for glob in &app.args.globs {
+        let glob = glob
+            .to_str()
+            .ok_or(anyhow!("Could not convert path to string"))?;
+        for path in glob::glob(glob)? {
+            let path = path?;
+            handle_endpoint(&path, &app, output_callback)?;
+        }
     }
     Ok(())
 }

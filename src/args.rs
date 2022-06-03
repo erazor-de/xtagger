@@ -19,10 +19,6 @@ pub struct Args {
     #[clap(short, long)]
     pub dry_run: bool,
 
-    /// Recurse into directories
-    #[clap(short, long)]
-    pub recurse: bool,
-
     #[clap(flatten)]
     pub print: Print,
 
@@ -33,8 +29,8 @@ pub struct Args {
     pub filter: Filter,
 
     // Args
-    #[clap(parse(from_os_str), value_name = "PATH")]
-    pub paths: Vec<PathBuf>,
+    #[clap(parse(from_os_str), value_name = "GLOB")]
+    pub globs: Vec<PathBuf>,
 }
 
 #[derive(clap::Args)]
