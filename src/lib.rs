@@ -9,7 +9,7 @@ use app::App;
 use itertools::Itertools;
 use xtag::XTags;
 
-pub use crate::args::Args;
+pub use crate::args::Arguments;
 
 fn print_file(path: &PathBuf, hyperlink: bool) {
     if hyperlink {
