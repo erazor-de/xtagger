@@ -98,12 +98,14 @@ where
 
     output_callback(&path, &tags);
 
-    if tags_possibly_changed && !app.args.dry_run {
-        xtag::set_tags(&path, &tags)?;
-    }
+    if !app.args.dry_run {
+        if tags_possibly_changed {
+            xtag::set_tags(&path, &tags)?;
+        }
 
-    if app.args.manipulate.delete {
-        xtag::delete_tags(&path)?;
+        if app.args.manipulate.delete {
+            xtag::delete_tags(&path)?;
+        }
     }
 
     Ok(())
