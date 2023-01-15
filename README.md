@@ -28,6 +28,7 @@ xtagger supports Perl-style regular expressions but has no look-around support.
 
 The order of actions xtagger executes is fixed and given as follows.
 - filter
+- copy
 - rename
 - remove
 - add
@@ -100,6 +101,10 @@ sign in the replace pattern. This is needed to keep the shell from replacing thi
 variables. You can alternatively use single quotes.
 
 This rename mechanism also supports named capture groups.
+
+### Copy tags
+
+The `--copy` option lets you copy the tags from the first handled file to all other files.
 
 ## Selecting files
 

@@ -1,87 +1,109 @@
 use std::path::PathBuf;
 
-use clap::{ArgGroup, Parser};
+use clap::{ArgAction, ArgGroup, Args, Parser};
 use xtag::XTags;
 
+// FIXME print help if no args
 #[derive(Parser)]
-#[clap(author, version, about, long_about = None)]
-#[clap(group(ArgGroup::new("printing").multiple(false).required(false).args(&["list", "show", "tags"])))]
-#[clap(group(ArgGroup::new("manipulating").multiple(true).required(false).args(&["add", "remove", "find", "replace"])))]
-#[clap(group(ArgGroup::new("deleting").multiple(false).required(false).args(&["delete"]).conflicts_with("manipulation")))]
-#[clap(group(ArgGroup::new("renaming").multiple(true).required(false).args(&["find", "replace"]).requires_all(&["find", "replace"])))]
-#[clap(group(ArgGroup::new("filtering").multiple(false).required(false).args(&["filter", "bookmark"])))]
-pub struct Args {
+#[command(author, version, about, long_about = None)]
+// #[command(group(ArgGroup::new("any").multiple(true).required(true).
+//     args(&["add", "remove", "find", "replace", "copy", "delete", "find", "replace", "filter", "bookmark"])))]
+#[command(group(ArgGroup::new("printing").multiple(false).required(false).
+    args(&["list", "show", "tags"])))]
+#[command(group(ArgGroup::new("manipulating").multiple(true).required(false).
+    args(&["add", "remove", "copy", "find", "replace"])))]
+#[command(group(ArgGroup::new("deleting").multiple(false).required(false).
+    args(&["delete"]).
+    conflicts_with("manipulating").
+    conflicts_with("renaming")))]
+#[command(group(ArgGroup::new("renaming").multiple(true).required(false).
+    args(&["find", "replace"]).
+    requires_all(&["find", "replace"])))]
+#[command(group(ArgGroup::new("filtering").multiple(false).required(false).
+    args(&["filter", "bookmark"])))]
+#[command(disable_help_flag = true)]
+pub struct Arguments {
+    // Use only long version of help, because short clashes with hyperlink.
+    // Don't know why Option is needed to make argument optional in this case.
+    /// Print help information
+    #[arg(long, action = ArgAction::Help)]
+    _help: Option<bool>,
+
     /// Print files as hyperlinks
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub hyperlink: bool,
 
     /// Don't change anything
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub dry_run: bool,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub print: Print,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub manipulate: Manipulate,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub filter: Filter,
 
     // Args
-    #[clap(parse(from_os_str), value_name = "GLOB")]
+    #[arg(value_name = "GLOB", value_hint = clap::ValueHint::DirPath)]
     pub globs: Vec<PathBuf>,
 }
 
-#[derive(clap::Args)]
+#[derive(Args)]
 pub struct Manipulate {
     /// Add tags
-    #[clap(short, long, value_name = "TAGS", parse(try_from_str=xtag::csl_to_map))]
+    #[arg(short, long, value_name = "TAGS", value_parser = xtag::csl_to_map)]
     pub add: Option<XTags>,
 
     /// Remove tags
-    #[clap(short, long, value_name = "TAGS", parse(try_from_str=xtag::csl_to_map))]
+    #[arg(short, long, value_name = "TAGS", value_parser = xtag::csl_to_map)]
     pub remove: Option<XTags>,
 
     /// Delete tags
-    #[clap(long)]
+    #[arg(long)]
     pub delete: bool,
 
-    #[clap(flatten)]
+    /// Copy tags
+    #[arg(long)]
+    pub copy: bool,
+
+    #[command(flatten)]
     pub rename: Rename,
 }
 
-#[derive(clap::Args)]
+#[derive(Args)]
 pub struct Filter {
     /// filter per search term
-    #[clap(short, long, value_name = "TERM")]
+    #[arg(short, long, value_name = "TERM")]
     pub filter: Option<String>,
 
     /// filter per bookmark
-    #[clap(short, long, value_name = "PATH", parse(from_os_str))]
+    #[arg(short, long, value_name = "PATH", value_hint = clap::ValueHint::DirPath)]
     pub bookmark: Option<PathBuf>,
 }
 
-#[derive(clap::Args)]
+#[derive(Args)]
 pub struct Rename {
-    #[clap(long, value_name = "REGEX")]
+    #[arg(long, value_name = "REGEX")]
     pub find: Option<String>,
 
-    #[clap(long, value_name = "REGEX")]
+    #[arg(long, value_name = "REGEX")]
     pub replace: Option<String>,
 }
 
-#[derive(clap::Args)]
+#[derive(Args)]
 pub struct Print {
     /// List files
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub list: bool,
 
     /// List files with tags and values
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub show: bool,
 
     /// List all used tags
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub tags: bool,
 }

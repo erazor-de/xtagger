@@ -3,23 +3,23 @@ use clap::Parser;
 use regex::Regex;
 use xtag::Searcher;
 
-use crate::args::Args;
+use crate::args::Arguments;
 
 pub struct App {
-    pub args: Args,
+    pub args: Arguments,
     pub filter: Option<Searcher>,
 }
 
 impl App {
     pub fn new() -> Result<Self> {
-        let args = Args::parse();
+        let args = Arguments::parse();
         custom_validation(&args)?;
         let filter = get_searcher(&args)?;
         Ok(App { args, filter })
     }
 }
 
-fn get_searcher(args: &Args) -> Result<Option<Searcher>> {
+fn get_searcher(args: &Arguments) -> Result<Option<Searcher>> {
     let filter = if let Some(term) = &args.filter.filter {
         Some(xtag::compile_search(term)?)
     } else if let Some(link) = &args.filter.bookmark {
@@ -47,7 +47,7 @@ fn check_capture_replace_group(find: &str, replace: &str) -> Result<()> {
     Ok(())
 }
 
-fn custom_validation(args: &Args) -> Result<()> {
+fn custom_validation(args: &Arguments) -> Result<()> {
     if let (Some(find), Some(replace)) = (
         &args.manipulate.rename.find,
         &args.manipulate.rename.replace,
