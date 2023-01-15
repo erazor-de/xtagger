@@ -3,17 +3,29 @@ use std::path::PathBuf;
 use clap::{ArgAction, ArgGroup, Args, Parser};
 use xtag::XTags;
 
+// FIXME print help if no args
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-#[command(group(ArgGroup::new("printing").multiple(false).required(false).args(&["list", "show", "tags"])))]
-#[command(group(ArgGroup::new("manipulating").multiple(true).required(false).args(&["add", "remove", "find", "replace"])))]
-#[command(group(ArgGroup::new("deleting").multiple(false).required(false).args(&["delete"]).conflicts_with("manipulation")))]
-#[command(group(ArgGroup::new("renaming").multiple(true).required(false).args(&["find", "replace"]).requires_all(&["find", "replace"])))]
-#[command(group(ArgGroup::new("filtering").multiple(false).required(false).args(&["filter", "bookmark"])))]
+// #[command(group(ArgGroup::new("any").multiple(true).required(true).
+//     args(&["add", "remove", "find", "replace", "copy", "delete", "find", "replace", "filter", "bookmark"])))]
+#[command(group(ArgGroup::new("printing").multiple(false).required(false).
+    args(&["list", "show", "tags"])))]
+#[command(group(ArgGroup::new("manipulating").multiple(true).required(false).
+    args(&["add", "remove", "copy", "find", "replace"])))]
+#[command(group(ArgGroup::new("deleting").multiple(false).required(false).
+    args(&["delete"]).
+    conflicts_with("manipulating").
+    conflicts_with("renaming")))]
+#[command(group(ArgGroup::new("renaming").multiple(true).required(false).
+    args(&["find", "replace"]).
+    requires_all(&["find", "replace"])))]
+#[command(group(ArgGroup::new("filtering").multiple(false).required(false).
+    args(&["filter", "bookmark"])))]
 #[command(disable_help_flag = true)]
 pub struct Arguments {
-    /// Print help information but use only long version.
-    /// Don't know why Option is needed to make argument optional in this case.
+    // Use only long version of help, because short clashes with hyperlink.
+    // Don't know why Option is needed to make argument optional in this case.
+    /// Print help information
     #[arg(long, action = ArgAction::Help)]
     _help: Option<bool>,
 
@@ -52,6 +64,10 @@ pub struct Manipulate {
     /// Delete tags
     #[arg(long)]
     pub delete: bool,
+
+    /// Copy tags
+    #[arg(long)]
+    pub copy: bool,
 
     #[command(flatten)]
     pub rename: Rename,

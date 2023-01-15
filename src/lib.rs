@@ -62,7 +62,12 @@ fn collect_tags(tags: &XTags, collection: &mut HashMap<String, HashSet<String>>)
 }
 
 // Works on files and directories, symbolic links don't have extended attributes
-fn handle_endpoint<F>(path: &PathBuf, app: &App, output_callback: &mut F) -> Result<()>
+fn handle_endpoint<F>(
+    path: &PathBuf,
+    app: &App,
+    copytags: &Option<XTags>,
+    output_callback: &mut F,
+) -> Result<()>
 where
     F: FnMut(&PathBuf, &XTags),
 {
@@ -73,6 +78,11 @@ where
         if !filter.is_match(&tags) {
             return Ok(());
         }
+    }
+
+    if let Some(copytags) = copytags {
+        tags.extend(copytags.to_owned());
+        tags_possibly_changed = true;
     }
 
     if let (Some(find), Some(replace)) = (
@@ -115,13 +125,20 @@ fn handle_paths<F>(app: &App, output_callback: &mut F) -> Result<()>
 where
     F: FnMut(&PathBuf, &XTags),
 {
+    let mut first = true;
+    let mut copytags: Option<XTags> = None;
+
     for glob in &app.args.globs {
         let glob = glob
             .to_str()
             .ok_or(anyhow!("Could not convert path to string"))?;
         for path in glob::glob(glob)? {
             let path = path?;
-            handle_endpoint(&path, &app, output_callback)?;
+            if first {
+                copytags = Some(xtag::get_tags(&path)?);
+                first = false;
+            }
+            handle_endpoint(&path, &app, &copytags, output_callback)?;
         }
     }
     Ok(())
