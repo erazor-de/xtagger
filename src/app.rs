@@ -4,6 +4,7 @@ use regex::Regex;
 use xtag::Searcher;
 
 use crate::args::Arguments;
+use crate::glob_iter::GlobIter;
 
 pub struct App {
     pub args: Arguments,
@@ -47,6 +48,29 @@ fn check_capture_replace_group(find: &str, replace: &str) -> Result<()> {
     Ok(())
 }
 
+fn check_glob_counts(args: &Arguments) -> Result<()> {
+    let mut iter = GlobIter::new(&args.globs)?;
+
+    // Lazy counting only 2
+    let mut count: u8 = 0;
+    if let Some(_) = iter.next() {
+        count += 1;
+    }
+    if let Some(_) = iter.next() {
+        count += 1;
+    }
+
+    if args.manipulate.copy == true && count < 2 {
+        return Err(anyhow!("copy mode needs at least 2 files"));
+    }
+
+    if (args.help == Some(false) || args.help == None) && count < 1 {
+        return Err(anyhow!("no file to work on"));
+    }
+
+    Ok(())
+}
+
 fn custom_validation(args: &Arguments) -> Result<()> {
     if let (Some(find), Some(replace)) = (
         &args.manipulate.rename.find,
@@ -54,6 +78,9 @@ fn custom_validation(args: &Arguments) -> Result<()> {
     ) {
         check_capture_replace_group(find, replace)?;
     }
+
+    check_glob_counts(args)?;
+
     Ok(())
 }
 

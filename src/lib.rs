@@ -1,15 +1,17 @@
 mod app;
 mod args;
+mod glob_iter;
 
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use app::App;
 use itertools::Itertools;
 use xtag::XTags;
 
 pub use crate::args::Arguments;
+use crate::glob_iter::GlobIter;
 
 fn print_file(path: &PathBuf, hyperlink: bool) {
     if hyperlink {
@@ -128,18 +130,13 @@ where
     let mut first = true;
     let mut copytags: Option<XTags> = None;
 
-    for glob in &app.args.globs {
-        let glob = glob
-            .to_str()
-            .ok_or(anyhow!("Could not convert path to string"))?;
-        for path in glob::glob(glob)? {
-            let path = path?;
-            if first {
-                copytags = Some(xtag::get_tags(&path)?);
-                first = false;
-            }
-            handle_endpoint(&path, &app, &copytags, output_callback)?;
+    for path in GlobIter::new(&app.args.globs)? {
+        let path = path?;
+        if first {
+            copytags = Some(xtag::get_tags(&path)?);
+            first = false;
         }
+        handle_endpoint(&path, &app, &copytags, output_callback)?;
     }
     Ok(())
 }
