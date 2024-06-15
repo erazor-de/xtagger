@@ -58,7 +58,7 @@ than one tag. Tag/value pairs are separated with `=`.
 $ xtagger --add "ARM,Samsung,ARMFamily=ARM9E,ARMArchitecture=ARMv5TEJ,ARMCore=ARM926EJ-S" "Samsung S3C2416.pdf"
 ```
 Here we add the standalone tags `ARM` and `Samsung` as well as the tag/value pairs `ARMFamily`,
-`ARMArchitecture` and `ARMCore` with there associated values `ARM9E`, `ARMv5TEJ` and `ARM926EJ`
+`ARMArchitecture` and `ARMCore` with their associated values `ARM9E`, `ARMv5TEJ` and `ARM926EJ`
 respectively to the single given file.
 
 If there already is an `ARMArchitecture` tag with or without an associated value, the new value
