@@ -4,8 +4,7 @@ xtagger is a console application that lets you manage and find tags on your file
 applications like [TMSU](https://tmsu.org/) and [Tagsistant](https://www.tagsistant.net/) use
 databases to manage the file/tag relationships, others like [TagSpaces](https://www.tagspaces.org/)
 use sidecar files or encode tags in the filename. xtagger is different in that it uses the extended
-attributes of supporting file systems on Linux and macOS (Windows alternate data streams are not
-supported yet).
+attributes of supporting file systems on Linux and macOS.
 
 This fixes one problem common with most other solutions: You can move or rename your files with your
 favourite tools without loosing the file/tag relationship managed elsewhere[^1].
@@ -58,7 +57,7 @@ than one tag. Tag/value pairs are separated with `=`.
 $ xtagger --add "ARM,Samsung,ARMFamily=ARM9E,ARMArchitecture=ARMv5TEJ,ARMCore=ARM926EJ-S" "Samsung S3C2416.pdf"
 ```
 Here we add the standalone tags `ARM` and `Samsung` as well as the tag/value pairs `ARMFamily`,
-`ARMArchitecture` and `ARMCore` with there associated values `ARM9E`, `ARMv5TEJ` and `ARM926EJ`
+`ARMArchitecture` and `ARMCore` with their associated values `ARM9E`, `ARMv5TEJ` and `ARM926EJ`
 respectively to the single given file.
 
 If there already is an `ARMArchitecture` tag with or without an associated value, the new value
@@ -244,9 +243,14 @@ This project is licensed under the [MIT License](https://opensource.org/licenses
 [^1]: Please be aware that not all filesystems might be able to use extended attributes or your Linux
 	kernel doesn't have support compiled in the kernel at all. Also older implementations of NFS for
 	example might not support them and/or you might have to use special configuration/mount options
-	to enable them. In all cases you might loose extended attributes while moving files between
-	filesystems without notice. Please check your systems components documentations regarding
-	extended attribute support.
+	to enable them. On the other hand, actual NTFS support on Linux supports extended attributes! In
+	all cases you	might loose extended attributes while moving files between filesystems without notice.
+	Please check your systems components documentations regarding extended attribute support or do
+	tests.
+
+	Please also note that extended attributes are not transferred between filesystems per default.
+	Commands like cp or rsync have special options that need to be used. cp for example needs
+	`--preserve=xattr`.
 
 	Also extended attributes might have filesystem specific size limits. These might be further
 	limited by other mechanisms using them. SELinux for example uses extended attributes for storing

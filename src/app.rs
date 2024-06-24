@@ -54,6 +54,7 @@ fn custom_validation(args: &Arguments) -> Result<()> {
     ) {
         check_capture_replace_group(find, replace)?;
     }
+
     Ok(())
 }
 
