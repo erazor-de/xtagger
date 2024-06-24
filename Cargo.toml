@@ -1,6 +1,6 @@
 [package]
 name = "xtagger"
-version = "1.2.0"
+version = "1.2.1"
 authors = ["Stefan Achatz <erazor_de@users.sourceforge.net>"]
 edition = "2021"
 license = "MIT"
