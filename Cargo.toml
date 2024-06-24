@@ -15,7 +15,7 @@ Command line application for managing and searching tags stored in filesystem ex
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 itertools = "0.12"
-xtag = { path = "../xtag", version = "1.1.0" }
+xtag = { path = "../xtag", version = "1.1" }
 anyhow = "1"
 regex = "1"
 glob = "0.3"
