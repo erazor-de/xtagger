@@ -27,7 +27,7 @@ pub struct Arguments {
     // Don't know why Option is needed to make argument optional in this case.
     /// Print help information
     #[arg(long, action = ArgAction::Help)]
-    pub help: Option<bool>,
+    help: Option<bool>,
 
     /// Print files as hyperlinks
     #[arg(short, long)]
